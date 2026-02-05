@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>毛孩行星測驗</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kiwi+Maru:wght@500&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        /* --- 基礎鎖定比例 --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body, html { width: 100%; height: 100%; background-color: #000; overflow: hidden; font-family: "Microsoft JhengHei", sans-serif; display: flex; justify-content: center; align-items: center; }
+        .page { display: none; width: 100vw; height: 100vh; position: absolute; justify-content: center; align-items: center; }
+        .active { display: flex; }
+
+        .wrapper { 
+            position: relative; 
+            width: 100vw; 
+            height: 133.33vw; 
+            max-height: 100vh; 
+            max-width: 75vh; 
+            margin: auto;
+            overflow: hidden;
+        }
+        .bg-img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+        /* --- 第二頁：上傳區域 --- */
+        .upload-zone { 
+            position: absolute; top: 52%; left: 50%; transform: translate(-50%, -50%); 
+            width: 38vw; height: 38vw; max-width: 200px; max-height: 200px;
+            border-radius: 50%; z-index: 50; 
+        }
+        #file-input { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 60; }
+        #preview-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: none; }
+        .btn-next-photo { position: absolute; bottom: 23%; left: 50%; transform: translateX(-50%); width: 50%; height: 10%; cursor: pointer; z-index: 100; }
+
+        /* --- 第三頁：性別與資料 --- */
+        .input-item { 
+            position: absolute; left: 50%; transform: translateX(-50%); 
+            width: 52%; height: 6%; background: transparent; border: none; outline: none; 
+            font-size: 4.5vw; font-weight: bold; color: #444; text-align: center; z-index: 999; 
+        }
+
+        /* 修正：去除 Chrome 自動填充產生的黃色背景 */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover, 
+        input:-webkit-autofill:focus {
+            -webkit-text-fill-color: #444;
+            -webkit-box-shadow: 0 0 0px 1000px transparent inset;
+            transition: background-color 5000s ease-in-out 0s;
+        }
+
+        .name-field { top: 36.5%; }
+        .birth-field { top: 49.5%; }
+        .gender-field { top: 64.5%; left: 52%; width: 48%; cursor: pointer; }
+        .btn-next-info { position: absolute; bottom: 17%; left: 50%; transform: translateX(-50%); width: 40%; height: 8%; cursor: pointer; }
+
+        /* --- 第四頁：行星與描述 --- */
+        .planet { position: absolute; cursor: pointer; transition: transform 0.3s ease; transform: translate(-50%, -50%); z-index: 10; }
+        .planet.selected { transform: translate(-50%, -50%) scale(1.2); }
+        #p-wood  { width: 10%; top: 51%; left: 40%; }
+        #p-fire  { width: 12%; top: 41%; left: 63%; }
+        #p-earth { width: 18%; top: 36.5%; left: 28%; }
+        #p-metal { width: 14%; top: 52%; left: 62%; }
+        #p-water { width: 11%; top: 56%; left: 25%; }
+
+        .desc-container { position: absolute; bottom: 25.5%; left: 50%; transform: translateX(-50%); width: 75%; text-align: center; }
+        
+        /* 修正：星球標題上移，避開灰色線 */
+        .desc-title { font-weight: 900; font-size: 4.2vw; color: #FFD700; margin-bottom: 12px; display: block; transform: translateY(-10px); }
+        
+        .desc-content { font-size: 3.2vw; color: #FFFFFF; line-height: 1.4; font-weight: bold; display: block; }
+        .btn-next-planet { position: absolute; bottom: 14%; left: 50%; transform: translateX(-50%); width: 50%; height: 10%; cursor: pointer; z-index: 200; }
+
+        /* --- 第五頁：結果與長按儲存 --- */
+        /* 修正：護照區域設定，確保截圖範圍精確 */
+        #passport-area { 
+            position: absolute; top: 22.5%; left: 16.5%; width: 67%; height: 28.5%; 
+            overflow: hidden; background: transparent;
+        }
+        .pass-photo { position: absolute; top: 18%; left: 13.5%; width: 29%; height: 54%; border-radius: 8px; object-fit: cover; opacity: 0; }
+        .pass-text { font-family: 'Kiwi Maru', serif; position: absolute; color: #5D4037; font-size: 3.2vw; white-space: nowrap; }
+        .p-name { top: 25%; left: 63%; } 
+        .p-birth { top: 38%; left: 65%; font-size: 2.8vw; } 
+        .p-element { top: 49%; left: 65%; } 
+        .p-no { position: absolute; bottom: 6%; left: 13.5%; font-family: 'Kiwi Maru', serif; font-size: 2vw; color: #6D4C41; }
+        
+        .hook-text { position: absolute; top: 54.5%; left: 50%; transform: translateX(-50%); width: 72%; text-align: center; color: #FFF; font-size: 3.8vw; line-height: 1.5; font-weight: bold; }
+        .btn-link-form { position: absolute; top: 65.5%; left: 50%; transform: translateX(-50%); width: 60%; height: 6.5%; cursor: pointer; }
+        .btn-download-trigger { position: absolute; bottom: 18.5%; left: 50%; transform: translateX(-50%); width: 40%; height: 4.5%; cursor: pointer; }
+
+        #download-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 9999; flex-direction: column; justify-content: center; align-items: center;
+        }
+        #download-result-img { width: 90%; max-width: 500px; border-radius: 10px; }
+        .download-tip { color: white; margin-top: 15px; font-size: 14px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="download-overlay" onclick="this.style.display='none'">
+        <img id="download-result-img" src="">
+        <p class="download-tip">長按圖片即可儲存通行證</p>
+        <p style="color:#aaa; font-size:12px; margin-top:10px;">點擊任意處關閉</p>
+    </div>
+
+    <div id="page1" class="page active" onclick="showPage('page2')">
+        <div class="wrapper"><img src="cover-bg.PNG" class="bg-img"></div>
+    </div>
+
+    <div id="page2" class="page">
+        <div class="wrapper">
+            <img src="page2-bg.PNG" class="bg-img">
+            <div class="upload-zone">
+                <input type="file" id="file-input" accept="image/*" onchange="previewFile()">
+                <img id="preview-img">
+            </div>
+            <div class="btn-next-photo" onclick="showPage('page3')"></div>
+        </div>
+    </div>
+
+    <div id="page3" class="page">
+        <div class="wrapper">
+            <img src="page3-bg.PNG" class="bg-img">
+            <input type="text" class="input-item name-field" id="pet-name" placeholder="請輸入姓名" autocomplete="off">
+            <input type="date" class="input-item birth-field" id="pet-birth">
+            <select class="input-item gender-field" id="pet-gender">
+                <option value="" disabled selected>請選擇</option>
+                <option value="男生">男生</option>
+                <option value="女生">女生</option>
+            </select>
+            <div class="btn-next-info" onclick="validateInfo()"></div>
+        </div>
+    </div>
+
+    <div id="page4" class="page">
+        <div class="wrapper">
+            <img src="page4-bg.PNG" class="bg-img">
+            <img src="wood.PNG" class="planet" id="p-wood" onclick="selectPlanet('wood', '木星')">
+            <img src="fire.PNG" class="planet" id="p-fire" onclick="selectPlanet('fire', '火星')">
+            <img src="earth.PNG" class="planet" id="p-earth" onclick="selectPlanet('earth', '土星')">
+            <img src="metal.PNG" class="planet" id="p-metal" onclick="selectPlanet('metal', '金星')">
+            <img src="water.PNG" class="planet" id="p-water" onclick="selectPlanet('water', '水星')">
+            <div class="desc-container" id="desc-box">
+                <div class="desc-content">點擊星球，探索毛孩的內心世界...</div>
+            </div>
+            <div class="btn-next-planet" onclick="generateCard()"></div>
+        </div>
+    </div>
+
+    <div id="page5" class="page">
+        <div class="wrapper">
+            <img src="page5-bg.PNG" class="bg-img">
+
+            <div id="passport-area">
+                <img src="passport-base.PNG" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:-1; object-fit:cover;">
+                
+                <img src="" id="final-photo" class="pass-photo">
+                <div class="pass-text p-name" id="res-name"></div>
+                <div class="pass-text p-birth" id="res-birth"></div>
+                <div class="pass-text p-element" id="res-planet"></div>
+                <div class="p-no" id="res-no"></div>
+            </div>
+
+            <div class="hook-text" id="hook-desc"></div>
+            <div class="btn-link-form" onclick="window.open('https://forms.gle/7ZNBPMad8CDTXxit8', '_blank')"></div>
+            <div class="btn-download-trigger" onclick="downloadPassport()"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentChoice = "";
+        let currentPlanetName = "";
+        const traits = { 'wood': '行動派冒險型', 'fire': '社交發光體型', 'earth': '穩定守護型', 'metal': '獨立思考型', 'water': '思考敏感型' };
+        const planetInfo = {
+            'wood':  { title: '【行動之星】', text: '活力充沛的冒險家，直率又熱情。' },
+            'fire':  { title: '【熱情之星】', text: '天生的社交發光體，渴望你的關注。' },
+            'earth': { title: '【療癒之星】', text: '隨和知足的守護者，最愛窩在你身邊。' },
+            'metal': { title: '【秩序之星】', text: '優雅獨立的指揮官，擁有自由的靈魂。' },
+            'water': { title: '【靈魂之星】', text: '細膩聰穎的觀察者，溫柔地注視世界。' }
+        };
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        function previewFile() {
+            const file = document.getElementById('file-input').files[0];
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                localStorage.setItem('petPhoto', reader.result);
+                document.getElementById('preview-img').src = reader.result;
+                document.getElementById('preview-img').style.display = 'block';
+            }
+            if (file) reader.readAsDataURL(file);
+        }
+
+        function validateInfo() {
+            const n = document.getElementById('pet-name').value;
+            const b = document.getElementById('pet-birth').value;
+            if(!n || !b) { alert("填寫完整後，就能啟動行星能量囉！"); return; }
+            document.activeElement.blur(); 
+            localStorage.setItem('petName', n);
+            localStorage.setItem('petBirth', b);
+            showPage('page4');
+        }
+
+        function selectPlanet(type, name) {
+            currentChoice = type;
+            currentPlanetName = name;
+            document.querySelectorAll('.planet').forEach(p => p.classList.remove('selected'));
+            document.getElementById('p-' + type).classList.add('selected');
+            document.getElementById('desc-box').innerHTML = `<span class="desc-title">${planetInfo[type].title}</span><span class="desc-content">${planetInfo[type].text}</span>`;
+        }
+
+        function generateCard() {
+            if (!currentChoice) { alert("請選擇一顆能量星球！"); return; }
+            const name = localStorage.getItem('petName');
+            const birth = localStorage.getItem('petBirth');
+            const photo = localStorage.getItem('petPhoto');
+            
+            document.getElementById('res-name').innerText = name;
+            document.getElementById('res-planet').innerText = currentPlanetName;
+            
+            const d = new Date(birth);
+            const YMD = `${d.getDate().toString().padStart(2,'0')}.${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getFullYear()}`;
+            document.getElementById('res-birth').innerText = YMD;
+            
+            const randomCode = Math.random().toString(36).substring(2, 5).toUpperCase();
+            document.getElementById('res-no').innerText = `NO. ${d.getFullYear()}${d.getDate()}.${name}.${randomCode}`;
+            
+            if(photo) {
+                document.getElementById('final-photo').src = photo;
+                document.getElementById('final-photo').style.opacity = "1";
+            }
+            
+            document.getElementById('hook-desc').innerText = `${name} 的 ${currentPlanetName}能量豐富，屬於${traits[currentChoice]}。想知道更多嗎？`;
+            showPage('page5');
+        }
+
+        /* 修正：僅抓取護照小區塊，不包含外層按鈕背景 */
+        function downloadPassport() {
+            const area = document.querySelector("#passport-area");
+            html2canvas(area, { 
+                backgroundColor: null, 
+                scale: 4, // 提高解析度
+                useCORS: true 
+            }).then(canvas => {
+                const dataUrl = canvas.toDataURL("image/png");
+                document.getElementById('download-result-img').src = dataUrl;
+                document.getElementById('download-overlay').style.display = 'flex';
+            });
+        }
+    </script>
+</body>
+</html>
